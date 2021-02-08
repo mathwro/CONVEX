@@ -1,6 +1,6 @@
 ﻿# This PowerShell Script will create Module 1
 
-param($SubTwo, $SubOne, $userNum, $domainname)
+param($SubTwo, $SubOne, $userNum, $domainname, $TenantID)
 
 Write-Host "`n          =====Creating Module One=====`n"
 
@@ -21,10 +21,13 @@ $RG2Name = "m1rg2" + $guid2
 $VaultName = "m1kv" + $guid2
 $UserVaultName = "m1userkv" + $guid2
 
-$Location = "westus"
+$Location = "westeurope"
 $SKU = "Standard_LRS"
 
-Get-AzSubscription –SubscriptionId $SubOne.Id -TenantId $SubOne.TenantId | Set-AzContext 
+Write-Host $SubOne
+Write-Host $SubTwo
+
+Get-AzSubscription -SubscriptionId $SubOne -TenantId $TenantID | Set-AzContext
 
 # Create a group 
 Write-Host "Creating security group"
@@ -49,11 +52,11 @@ Write-Host "Adding flag to $SAName"
 New-AzStorageContainer -Name $BlobName -Context $ctx -Permission Blob
 Set-AzStorageBlobContent -File "..\Utils\flag.txt" -Container $BlobName -Blob $FileName -Context $ctx
 Write-Host "Flag added to $SAName"
-$scope = '/subscriptions/' + $SubOne.Id + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.Storage/storageAccounts/' + $SAName
+$scope = '/subscriptions/' + $SubOne + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.Storage/storageAccounts/' + $SAName
 New-AzRoleAssignment -ObjectId $group.Id -RoleDefinitionName Reader -Scope $scope
 
 #Switch Subscriptions
-Get-AzSubscription –SubscriptionId $SubTwo.Id -TenantId $SubTwo.TenantId | Set-AzContext
+Get-AzSubscription -SubscriptionId $SubTwo -TenantId $TenantID | Set-AzContext
  
 # ------In Start Sub------ #
 # Create Resource Group and give Group access

@@ -1,6 +1,6 @@
 # This PowerShell Script will create Module 2
 
-param($SubOne, $SubTwo, $userNum, $domainname)
+param($SubOne, $SubTwo, $userNum, $domainname, $TenantID)
 
 Write-Host "`n          =====Creating Module Two=====`n"
 
@@ -20,10 +20,10 @@ $VaultName = "m2kv" + $guid2
 $SA2Name = "m2sa" + $guid2
 $BlobName = "m2resources"
 
-$Location = "westus"
+$Location = "westeurope"
 $SKU = "Standard_LRS"
 
-Get-AzSubscription -SubscriptionId $SubOne.Id -TenantId $SubOne.TenantId | Set-AzContext 
+Get-AzSubscription -SubscriptionId $SubOne -TenantId $TenantID | Set-AzContext
 
 # Create security group
 Write-Host "Creating security group"
@@ -47,7 +47,7 @@ Write-Host "$RG1Name Web App created"
 New-AzRoleAssignment -ObjectId $group.Id -RoleDefinitionName Contributor -ResourceName $webServiceName -ResourceType Microsoft.Web/sites -ResourceGroupName $RG1Name
 
 #Switch Subscriptions
-Get-AzSubscription -SubscriptionId $SubTwo.Id -TenantId $SubTwo.TenantId | Set-AzContext
+Get-AzSubscription -SubscriptionId $SubTwo -TenantId $TenantID | Set-AzContext
 
 # ------In Sub Two------ #
 # Create Resource Group
@@ -65,10 +65,10 @@ $Key1 = (Get-AzStorageAccountKey -ResourceGroupName $RG2Name -Name $SA2Name) | W
 # Create the Service Principles
 Write-Host "Creating Service Principals"
 $sp1Name = "m2webapp"
-$sp1Scope = '/subscriptions/' + $SubTwo.Id + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.KeyVault/vaults/' + $VaultName
+$sp1Scope = '/subscriptions/' + $SubTwo + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.KeyVault/vaults/' + $VaultName
 $sp1 = New-AzADServicePrincipal -DisplayName $sp1Name -Role Reader -Scope $sp1Scope
 $sp2Name = "m2webapp-admin"
-$sp2Scope = '/subscriptions/' + $SubTwo.Id + '/resourceGroups/' + $RG2Name
+$sp2Scope = '/subscriptions/' + $SubTwo + '/resourceGroups/' + $RG2Name
 $sp2 = New-AzADServicePrincipal -DisplayName $sp2Name -Scope $sp2Scope
 Write-Host "Service Principals created"
 
@@ -84,7 +84,7 @@ Set-AzKeyVaultSecret -VaultName $theVault.VaultName -Name "appKey" -SecretValue 
 Set-AzKeyVaultAccessPolicy -VaultName $theVault.VaultName -ObjectId $sp1.Id -PermissionsToKeys get,list -PermissionsToSecrets get,list
 
 # ------In Sub One------ #
-Get-AzSubscription -SubscriptionId $SubOne.Id -TenantId $SubOne.TenantId | Set-AzContext 
+Get-AzSubscription -SubscriptionId $SubOne -TenantId $TenantID | Set-AzContext
 
 # Update App Settings to include App1 id and key
 Write-Host "Updating Web App Application settings"

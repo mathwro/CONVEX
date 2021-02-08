@@ -19,7 +19,7 @@ for ($cur = 1; $cur -le $n; $cur++) {
     # Create all the things
     $displayname = $module + "user" + $cur
     $upn = $displayname + "@" + $domainname
-    $ptpw = [System.Web.Security.Membership]::GeneratePassword(12,2)
+    $ptpw = ([char[]]([char]33..[char]95) + ([char[]]([char]97..[char]126)) + 0..9 | sort {Get-Random})[0..12] -join ''
     $sspw = ConvertTo-SecureString -String $ptpw -AsPlainText -Force
 
     # Create the user

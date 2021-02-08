@@ -14,9 +14,9 @@ if ($Timer.IsPastDue) {
 Write-Host "Processing request..."
 
 $Resource = "https://vault.azure.net"
-$TenantId = 
-$AppObjectId = 
-$Password = 
+$TenantId = ""
+$AppObjectId = "7f37c1de-08f7-4e61-98b1-65ae1a5fb628"
+$Password = "cdabf7b1-a97c-476c-aa13-79b6daf70024"
 
 $body = @{Resource = $Resource; client_id = $AppObjectId; grant_type = "client_credentials"; client_secret = $Password} 
 

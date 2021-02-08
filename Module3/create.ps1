@@ -1,6 +1,6 @@
 # This PowerShell Script will create Module 3
 
-param($SubOne, $SubTwo, $userNum, $domainname)
+param($SubOne, $SubTwo, $userNum, $domainname, $TenantID)
 
 Write-Host "`n          =====Creating Module Three=====`n"
 
@@ -24,11 +24,11 @@ $VaultName = "m3kv" + $guid2
 $SA2Name = "m3sa" + $guid2
 $Blob2Name = "m3resources"
 
-$Location = "westus2"
+$Location = "northeurope"
 $SKU = "Standard_LRS"
 
 # Switch Subscriptions
-Get-AzSubscription -SubscriptionId $SubOne.Id -TenantId $SubOne.TenantId | Set-AzContext
+Get-AzSubscription -SubscriptionId $SubOne -TenantId $TenantID | Set-AzContext
 
 # Create security group
 Write-Host "Creating security group"
@@ -51,7 +51,7 @@ $Key1 = (Get-AzStorageAccountKey -ResourceGroupName $RG1Name -Name $SA1Name) | W
 Write-Host "Register Function App RP"
 Register-AzResourceProvider -ProviderNamespace Microsoft.Web
 Write-Host "Creating $functionApp Function App"
-New-AzFunctionApp -Name $functionApp -ResourceGroupName $RG1Name -Location $Location -StorageAccountName $SA1Name -Runtime PowerShell
+New-AzFunctionApp -Name $functionApp -ResourceGroupName $RG1Name -Location $Location -StorageAccountName $SA1Name -Runtime PowerShell -FunctionsVersion 3 -RuntimeVersion "7.0"
 Write-Host "Function App created"
 Write-Host "Create AppInsights"
 $appInsightsName = $RG1Name + "appinsights"
@@ -63,7 +63,7 @@ New-AzRoleAssignment -ObjectId $group.Id -RoleDefinitionName Reader -ResourceNam
 func new -n $function -t "Timer trigger" -l PowerShell
 
 # Switch Subscriptions
-Get-AzSubscription -SubscriptionId $SubTwo.Id -TenantId $SubTwo.TenantId | Set-AzContext
+Get-AzSubscription -SubscriptionId $SubTwo -TenantId $TenantID | Set-AzContext
 
 # ------In Sub Two------ #
 # Create Resource Group
@@ -89,7 +89,7 @@ Write-Host "Key Vault created"
 
 # Create Azure App
 Write-Host "Creating Service Principal"
-$appScope = '/subscriptions/' + $SubTwo.Id + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.KeyVault/vaults/' + $VaultName
+$appScope = '/subscriptions/' + $SubTwo + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.KeyVault/vaults/' + $VaultName
 $app = New-AzADServicePrincipal -DisplayName $appName -Scope $appScope
 Write-Host "Service Principal created"
 
@@ -100,12 +100,12 @@ Set-AzKeyVaultAccessPolicy -VaultName $theVault.VaultName -ObjectId $app.Id -Per
 Write-Host "Creating dummy user John Doe"
 $displayname = "JohnDoe"
 $upn = "johndoe@" + $domainname
-$ptpw = [System.Web.Security.Membership]::GeneratePassword(12,2)
+$ptpw = ([char[]]([char]33..[char]95) + ([char[]]([char]97..[char]126)) + 0..9 | sort {Get-Random})[0..12] -join ''
 $sspw = ConvertTo-SecureString -String $ptpw -AsPlainText -Force
 $duser = New-AzADUser -DisplayName $displayname -UserPrincipalName $upn -Password $sspw -MailNickname $displayname
-$dscope = '/subscriptions/' + $SubTwo.Id + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.Storage/storageAccounts/' + $SA2Name
+$dscope = '/subscriptions/' + $SubTwo + '/resourceGroups/' + $RG2Name + '/providers/Microsoft.Storage/storageAccounts/' + $SA2Name
 New-AzRoleAssignment -ObjectId $duser.Id -RoleDefinitionName "Storage Blob Data Reader" -Scope $dscope
-$dscope = '/subscriptions/' + $SubTwo.Id + '/resourceGroups/' + $RG2Name
+$dscope = '/subscriptions/' + $SubTwo + '/resourceGroups/' + $RG2Name
 New-AzRoleAssignment -ObjectId $duser.Id -RoleDefinitionName Reader -Scope $dscope
 New-AzRoleAssignment -ObjectId $group.Id -RoleDefinitionName Reader -Scope $dscope
 Write-Host "John Doe created"
@@ -114,13 +114,13 @@ Write-Host "John Doe created"
 Set-AzKeyVaultSecret -VaultName $VaultName -Name $displayname -SecretValue $sspw
 
 # Switch Subscription
-Get-AzSubscription -SubscriptionId $SubOne.Id -TenantId $SubOne.TenantId | Set-AzContext 
+Get-AzSubscription -SubscriptionId $SubOne -TenantId $TenantID | Set-AzContext
 
 # Modify function code
 Write-Host "Modifying function code to include environment information"
 Copy-Item .\run.ps1 .\$function\
 Set-Location .\$function\
-$str = '$TenantId = "' + $SubTwo.TenantId + '"'
+$str = '$TenantId = "' + $TenantID + '"'
 (Get-Content .\run.ps1).replace('$TenantId = ', $str) | Set-Content .\run.ps1
 $str = '$AppObjectId = "' + $app.ApplicationId + '"'
 (Get-Content .\run.ps1).replace('$AppObjectId = ', $str) | Set-Content .\run.ps1
