@@ -51,10 +51,7 @@ catch{Write-Host "Error getting subscriptions from Az PowerShell Identity" -Fore
 # Get the first sub id and store the value
 do {
     $prompt1 = Read-Host -Prompt 'Input the Id of the start subscription'
-    $input1 = "*" + $prompt1 + "*"
-    $SubOne = $allSubs | Where-Object id -CLike $input1
-    $s1 = $subIds.Contains($SubOne.Id)
-    if (-Not $s1) {Write-Host "Not a valid subscription"}
+    $s1 = (Get-AzSubscription -SubscriptionId $prompt1).Id
 } until ($s1)
 
 # Remove sub one to avoid repeats
@@ -63,11 +60,7 @@ $null = $subIds.Remove($SubOne.Id)
 # Get the second sub and store the value
 do {
     $prompt2 = Read-Host -Prompt 'Input the id of the end subscription'
-    $input2 = "*" + $prompt2 + "*"
-    $SubTwo = $allSubs | Where-Object id -CLike $input2
-    $s2 = $subIds.Contains($SubTwo.Id)
-    if ($SubTwo.Id -eq $SubOne.Id) {Write-Host "That subscription is already being used"}
-    elseif (-Not $s2) {Write-Host "Not a valid subscription"}
+    $s2 = (Get-AzSubscription -SubscriptionId $prompt2).Id
 } until ($s2)
 
 # Decide if we are creating or deleting modules
